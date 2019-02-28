@@ -464,6 +464,7 @@ static int Mqtt_HandlePublish(struct MqttContext *ctx, char flags,
 
 	
 	if('$' == *topic) {		/* 若是系统topic */
+		//strstr 判断CMD_TOPIC_PREFIX是否是topic子串
         if(topic == strstr(topic, CMD_TOPIC_PREFIX)) {		/* 若是命令下发 */
             //$creq/cmdid
             int i=CMD_TOPIC_PREFIX_LEN + 1; //Topicname=$creq字符串?\0’结宿

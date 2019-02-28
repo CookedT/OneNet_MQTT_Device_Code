@@ -606,9 +606,9 @@ void MqttSample_pollingCmd()
         else
         {
             //do something
-            if(strcmp(ctx->cmd,"sound") == 0 )
+            if(strcmp(ctx->cmd,"cmd_get_all_data") == 0 )//OneNet request to get all data from Arduino
             {
-                
+                MqttSample_senddata();
             }
 
             //do something
