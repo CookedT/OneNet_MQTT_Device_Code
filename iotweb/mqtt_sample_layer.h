@@ -1,11 +1,13 @@
 #ifndef MQTT_SAMPLE_LAYER_H
 #define MQTT_SAMPLE_LAYER_H
 
-#include <ESP8266WiFi.h>
-#include <DHT.h>
+
 #include "mqtt.h"
 #include "common.h"
-
+/* Sensor libary head files */
+#include <Servo.h>?
+#include <ESP8266WiFi.h>
+#include <DHT.h>
 
 //MQTT
 //#define ESP_SSID "bivl_adsl" // Your network name here
@@ -22,11 +24,19 @@
 #define PROD_ID     "214410"//产品ID
 #define SN          "cscbivl"//设备鉴权信息
 
+#define CMD_GET_ALL_DATA "cmd_get_all_data"
+#define CMD_GET_DTH_DATA "cmd_get_dth_data"//example cmd_get_dth_data:
+#define CMD_GET_SERVO_POSTION "cmd_get_servo_position"
+#define CMD_SET_SERVO_POSITION "cmd_set_servo_position"//example cmd_set_servo_position+90:
+
 //DHT SENSOR
 #define DHTPIN D4    // what digital pin DHT connected to
 #define DHTTYPE DHT11   // DHT 11
 
+#define SERVOPIN D5
+
 extern DHT dht;
+extern Servo myservo;
 
 enum MqttEventType
 {
@@ -70,7 +80,7 @@ struct MqttSampleContext
     //generate mqtt package id
     uint16_t pkt_id;
 
-    char cmd[16];
+    char cmd[64];
     uint8_t cmd_arg;
 
 };
@@ -87,7 +97,11 @@ void MqttSample_readPacket();
 
 void MqttSample_pollingCmd();
 
-void MqttSample_senddata();
+void MqttSample_sendDHTdata();
+
+void MqttSample_sendServoPos();
+
+void MqttSample_setServoPos(int pos);
 
 void die(char *msg);
 

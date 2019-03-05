@@ -12,6 +12,8 @@ WiFiClient client;
 
 //Global
 DHT dht(DHTPIN, DHTTYPE);
+Servo myservo;
+
 struct MqttSampleContext ctx[1];
 
 static void MqttSample_printbuffer(char *buf, int size)
@@ -464,6 +466,48 @@ static bool MqttSample_pulish_SensorData(float humidity,float temperature)
 
 }
 
+static bool MqttSample_pulish_ServoData(int position)
+{
+    enum MqttQosLevel qos = MQTT_QOS_LEVEL1;
+    int payload_len;
+    char *payload;
+
+    //build type =3 json format .
+    String data = "{\"servo_pos\":\""+String(position)+"\"""}";
+
+    //send pkt
+    payload_len = 1 + 2 + data.length();
+    payload = (char *)malloc(payload_len);
+    if(payload == NULL)
+    {
+        printf("<%s>: t_payload malloc error\r\n", __FUNCTION__);
+        return false;
+    }
+
+    //type 3 means JSON format
+    payload[0] = 3;
+
+    //length 2 Bytes
+    payload[1] = (data.length() & 0xFF00) >> 8;
+    payload[2] = data.length() & 0xFF;
+
+    //json content
+    memcpy(payload+3, data.begin(), data.length());
+    
+    printf("Topic: %s QoS: %d Payload: %s\n",
+           "$dp",qos, data.begin());
+    //$dp means upload cmd
+    bool ret = MqttSample_pulish("$dp",payload, payload_len,qos );
+    free(payload);
+    if(ret)
+        return true;
+    else
+        LOG(ERROR,"MqttSample_pulish $dp error! \n");
+    return false;
+
+}
+
+
 static void MqttSample_deInit()
 {
     // reclaim the resource
@@ -590,6 +634,37 @@ static bool MqttSample_respcommand(char *resp)
     return false;
 }
 
+int MqttSample_readCmdPos(char *cmd)
+{
+	if(NULL == cmd)
+		return -1;
+	int pos_value_len = 0;
+	char *pos_value_full;
+	//printf("cmd = %s\n", cmd);
+	char *pos_value = strstr(ctx->cmd, CMD_SET_SERVO_POSITION);
+	pos_value += strlen(CMD_SET_SERVO_POSITION);
+	pos_value += 1;//beyond + or -
+	//printf("pos_value = %s\n", pos_value);
+	char * temp_pos = pos_value;
+	while(*temp_pos != '\0')
+	{
+	//	printf("temp_pos = %c\n", *temp_pos);
+		++pos_value_len;
+		temp_pos += 1;
+	}
+	//printf("position value length = %d\n", pos_value_len);
+	
+	pos_value_full = (char *)malloc(pos_value_len + 1);
+	memset(pos_value_full, 0, pos_value_len);
+	memcpy(pos_value_full, pos_value, pos_value_len);
+
+	//printf("pos_value_full  = %s\n", pos_value_full);
+	
+	int position_value = atoi(pos_value_full);
+	//printf("position  = %d\n", position_value);
+	
+	return position_value;
+}
 
 void MqttSample_pollingCmd()
 {
@@ -605,27 +680,35 @@ void MqttSample_pollingCmd()
         }
         else
         {
-            //do something
-            if(strcmp(ctx->cmd,"cmd_get_all_data") == 0 )//OneNet request to get all data from Arduino
+            if(strstr(ctx->cmd,CMD_GET_ALL_DATA))//OneNet request to get all data from Arduino
             {
-                MqttSample_senddata();
+                MqttSample_sendDHTdata();
+				MqttSample_sendServoPos();
+				//Send other sensor data following
             }
-
-            //do something
-            if(strcmp(ctx->cmd,"led")== 0 )
-            {
-               
-            }
-
+			else if(strstr(ctx->cmd, CMD_GET_DTH_DATA))
+			{
+			    MqttSample_sendDHTdata();
+			}
+			/* You can handle other  command  following */
+			else if(strstr(ctx->cmd, CMD_GET_SERVO_POSTION))
+			{
+			    MqttSample_sendServoPos();
+			}
+			else if(strstr(ctx->cmd, CMD_SET_SERVO_POSITION))
+			{
+				int pos_value = MqttSample_readCmdPos(ctx->cmd);
+				MqttSample_setServoPos(pos_value);
+			}
+			/* Command handle end */
+			else
+			{
+			    
+LOG(ERROR,"CMD string error, resend it!\n");
+			}
         }
-
     }
-
-
 }
-
-
-
 
 //static boolean MqttSample_Setup();
 //static void die(char *msg);
@@ -660,9 +743,44 @@ bool MqttSample_keepalive()
     }
 
 }
+void MqttSample_setServoPos(int pos)
+{
+	printf("<%s>: come in, change postion to %d", __FUNCTION__, pos);
+	//int temp_pos = myservo.read();
+	//int new_pos = temp_pos+pos;
+	if (pos < 0 || pos > 180)
+    {
+        LOG(ERROR,"Posistion data error!");
+        return;
+    }
+
+	myservo.write(pos);
+	delay(20);
+}
+void MqttSample_sendServoPos()
+{
+    //capture sensor data ...
+    printf("<%s>: come in\r\n", __FUNCTION__);
+	int pos = -1;
+    pos = myservo.read();
+    
+    // Check if any reads failed and exit early (to try again).
+    if (pos < 0 || pos > 180)
+    {
+        LOG(ERROR,"Posistion data error!");
+        return;
+    }
+
+    //report data to oneNet
+  //  LOG(DEBUG,"publish sensor data:\n");
+    if(!MqttSample_pulish_ServoData(pos))
+    {
+        LOG(ERROR,"publish servor data fail\n");
+    }
+}
 
 
-void MqttSample_senddata()
+void MqttSample_sendDHTdata()
 {
     //capture sensor data ...
     printf("<%s>: come in\r\n", __FUNCTION__);
