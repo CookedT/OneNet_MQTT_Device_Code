@@ -16,17 +16,13 @@
 //#include "log.h"
 #include "mqtt_sample_layer.h"
 
-#define OFFICE_ADSL
-#ifdef OFFICE_ADSL
+
 const char* ssid = "bivl_adsl";
 const char* password = "0123456789";
-#else
-const char* ssid = "HUAWEI-WODEJIA";
-const char* password = "lixiadian99";
-#endif
 
-char devid_temp[] = "517772285";
-char API_KEY[] = "bHYoTlqzhICGHCH=3rZWTsUkAqY=";
+
+char devid_temp[] = "";
+char API_KEY[] = "";
 
 
 boolean setupWIFI()
@@ -133,7 +129,8 @@ void setup()
     
     //Mqtt init
     MqttProtocolInit();
-	
+
+    //Delay enough time for mqtt init done
 	delay(5000);
 }
 

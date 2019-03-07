@@ -5,7 +5,7 @@
 #include "mqtt.h"
 #include "common.h"
 /* Sensor libary head files */
-#include <Servo.h>?
+#include <Servo.h>
 #include <ESP8266WiFi.h>
 #include <DHT.h>
 
@@ -21,8 +21,8 @@
 //#define LED_PIN  13
 //#define LED_D 8
 //#define SPEAKER_PIN 5
-#define PROD_ID     "214410"//产品ID
-#define SN          "cscbivl"//设备鉴权信息
+#define PROD_ID     ""//产品ID
+#define SN          ""//设备鉴权信息
 
 #define CMD_GET_ALL_DATA "cmd_get_all_data"
 #define CMD_GET_DTH_DATA "cmd_get_dth_data"//example cmd_get_dth_data:
